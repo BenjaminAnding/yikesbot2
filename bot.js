@@ -70,11 +70,8 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     else if (message.substring(0, 1) == '?') {
 		logger.info(message.toString())
         var args = message.substring(1).split(' ');
-        //var cmd = user.toString()+': '+message.substring(1)+'\n Yikesbot: ';
-		//var cmd = 'My second grader asked me this: \"'+message.substring(1)+'\". I decided the simplest way to explain was to say: ';
-		var cmd = "Yikesbot is an incredibly helpful AI language model trained on the pile. An internet chat is interacting with Yikesbot. User \""+user.toString()+"\" says: \""+message.substring(1)+"\". Yikesbot responds by saying: \""; 
         args = args.splice(1);
-	
+		var cmd = user+'and I always have such insightful conversations.\n'+user+': Hello\nMe: Hi '+user+'\n\n\n'+user+': Nice to see you again, mind answering a quick question for me while I have \'ya?\nMe: Not at all!\nMe: I\'m all ears!\n\n\n'+user+': '+message.substring(1)+'\nMe:'
 	    const { spawn } = require('child_process');
 		const responses = []; // Store readings
 		logger.info(cmd.toString())
@@ -84,17 +81,28 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 			jsonObject = JSON.parse(data)
     		// convert Buffer object to Float
     		responses.push(data);
-    		bot.sendMessage({
-				to: channelID,
-				message: jsonObject.choices[0].text.split("\\\\\".")[0]
-			})
+			var lines = jsonObject.choices[0].text.split("Me:")
+			if (lines.length > 1) {
+				for (var i = 0; i < lines.length; i++) {
+					bot.sendMessage({
+						to: channelID,
+						message: lines[i]
+					})
+				}
+			}
+			else {
+    			bot.sendMessage({
+					to: channelID,
+					message: jsonObject.choices[0].text.split("\n\n")[0]
+				})
+			}
 		})
     }
     else if ((message.includes('yikesbot') || message.includes('yb')) && (user != 'yikesbot')) {
 		if (user == 'BroccoliWalkway') {
 			bot.sendMessage({
 				to: channelID,
-				message: cool.faces
+				message: cool.faces[randomNumber(0,9)]
 			})
 		}
 		else {
@@ -104,7 +112,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 			});
 		}
 	}
-	else if (message.substring(0,3) == '```') {
+	else if ((message.substring(0,3) == '```') || (message.substring(0,3) == '"""')) {
 		if (!(user == 'yikesbot')) {
 			cmd = message;
 		}
