@@ -11,6 +11,7 @@ logger.add(new logger.transports.Console, {
     colorize: true
 });
 logger.level = 'debug';
+const responses = []; // Store readings
 // Initialize Discord Bot
 var bot = new Discord.Client({
    token: auth.token,
@@ -64,7 +65,14 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 						message: 'https://www.stevensegallery.com/'+width+'/'+height
 					});
 					break;
-			}
+				case 'pong':
+					bot.sendMessage({
+						to: channelID,
+						message: responses
+					});
+					break;
+		}
+
 	}
 	// Let's also listen for ? messages:
     else if (message.substring(0, 1) == '?') {
@@ -73,13 +81,11 @@ bot.on('message', function (user, userID, channelID, message, evt) {
         args = args.splice(1);
 		var cmd = user+'and I always have such insightful conversations.\n'+user+': Hello\nMe: Hi '+user+'\n\n\n'+user+': Nice to see you again, mind answering a quick question for me while I have \'ya?\nMe: Not at all!\nMe: I\'m all ears!\n\n\n'+user+': '+message.substring(1)+'\nMe:'
 	    const { spawn } = require('child_process');
-		const responses = []; // Store readings
 		logger.info(cmd.toString())
 		const yikes = spawn('python3', ['yikes.py', cmd.toString()]);
 		yikes.stdout.on('data', function(data) {
 			logger.info(data.toString())
 			jsonObject = JSON.parse(data)
-    		// convert Buffer object to Float
     		responses.push(data);
 			var lines = jsonObject.choices[0].text.split("Me:")
 			if (lines.length > 1) {
