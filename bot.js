@@ -1,4 +1,5 @@
-var Discord = require('discord.io');
+require('dotenv').config();
+var { Client, Intents } = require('discord.js');
 var logger = require('winston');
 var auth = require('./auth.json');
 var cool = require('cool-ascii-faces');
@@ -11,115 +12,95 @@ logger.add(new logger.transports.Console, {
     colorize: true
 });
 logger.level = 'debug';
-const responses = []; // Store readings
+var chatlog = [];
 // Initialize Discord Bot
-var bot = new Discord.Client({
-   token: auth.token,
-   autorun: true
-});
+var bot = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MEMBERS, Intents.FLAGS.GUILD_BANS, Intents.FLAGS.GUILD_EMOJIS_AND_STICKERS, Intents.FLAGS.GUILD_INTEGRATIONS, Intents.FLAGS.GUILD_WEBHOOKS, Intents.FLAGS.GUILD_INVITES, Intents.FLAGS.GUILD_VOICE_STATES, Intents.FLAGS.GUILD_PRESENCES, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.GUILD_MESSAGE_TYPING, Intents.FLAGS.DIRECT_MESSAGES, Intents.FLAGS.DIRECT_MESSAGE_REACTIONS, Intents.FLAGS.DIRECT_MESSAGE_TYPING] })
+
+
 bot.on('ready', function (evt) {
     logger.info('Connected');
     logger.info('Logged in as: ');
     logger.info(bot.username + ' - (' + bot.id + ')');
 });
-bot.on('message', function (user, userID, channelID, message, evt) {
+bot.on('messageCreate', function (message) {
+//function (message.author.username, message.author.usernameID, message.channel.id, message, evt) 
     // Our bot needs to know if it will execute a command
     // It will listen for messages that will start with `!`
-    if (message.substring(0, 1) == '!') {
-        var args = message.substring(1).split(' ');
+	var channel = bot.channels.cache.get(message.channel.id);
+	chatlog.push(message.author.username+':'+message.content)
+	logger.info(message)
+	if (chatlog.length >= 25) {
+		chatlog.pop()
+	}
+	if (message.content.substring(0, 1) == '!') {
+        var args = message.content.substring(1).split(' ');
         var cmd = args[0];
-       
         args = args.splice(1);
         switch(cmd) {
 				// !ping
 				case 'ping':
-					bot.sendMessage({
-						to: channelID,
-						message: 'Pong!'
-					});
+					channel.send('pong')
 					break;
 				case 'nickcage':
 					height = randomNumber(100,300);
 					width = randomNumber(100,300);
 					logger.info(height+' '+width);
-					bot.sendMessage({
-						to: channelID,
-						message: 'https://www.placecage.com/'+width+'/'+height
-					});
+					channel.send('https://www.placecage.com/'+width+'/'+height)
 					break;
 				case 'billmurray':
 					height = randomNumber(100,300);
 					width = randomNumber(100,300);
 					logger.info(height+' '+width);
-					bot.sendMessage({
-						to: channelID,
-						message: 'https://www.fillmurray.com/'+width+'/'+height
-					});
+					channel.send('https://www.fillmurray.com/'+width+'/'+height)
 					break;
 				case 'stevensegal':
 					height = randomNumber(100,300);
 					width = randomNumber(100,300);
 					logger.info(height+' '+width);
-					bot.sendMessage({
-						to: channelID,
-						message: 'https://www.stevensegallery.com/'+width+'/'+height
-					});
+					channel.send('https://www.stevensegallery.com/'+width+'/'+height)
 					break;
 				case 'pong':
-					bot.sendMessage({
-						to: channelID,
-						message: responses
-					});
+					logger.debug(chatlog)
+					message.react('🧮')
 					break;
 		}
-
 	}
 	// Let's also listen for ? messages:
-    else if (message.substring(0, 1) == '?') {
-		logger.info(message.toString())
-        var args = message.substring(1).split(' ');
+    else if (message.content.substring(0, 1) == '?') {
+		logger.info(message.content.toString())
+        var args = message.content.substring(1).split(' ');
         args = args.splice(1);
-		var cmd = user+'and I always have such insightful conversations.\n'+user+': Hello\nMe: Hi '+user+'\n\n\n'+user+': Nice to see you again, mind answering a quick question for me while I have \'ya?\nMe: Not at all!\nMe: I\'m all ears!\n\n\n'+user+': '+message.substring(1)+'\nMe:'
+		if (chatlog.length <= 17) {
+			message.react('🐌')
+		}
+		cmd = ""
+		chatlog.forEach( function(item, index) {
+			cmd += item.toString()
+			cmd += '\n'
+		})
+		cmd += message.author.username+':'+message.content.substring(1)+'\nyikesbot:'
 	    const { spawn } = require('child_process');
 		logger.info(cmd.toString())
-		const yikes = spawn('python3', ['yikes.py', cmd.toString()]);
+		const yikes = spawn('python3', ['yikes.py', cmd.toString(), 100, '\n\n', 'davinci']);
 		yikes.stdout.on('data', function(data) {
 			logger.info(data.toString())
 			jsonObject = JSON.parse(data)
-    		responses.push(data);
-			var lines = jsonObject.choices[0].text.split("Me:")
+			var lines = jsonObject.choices[0].text.split("yikesbot:")
 			if (lines.length > 1) {
 				for (var i = 0; i < lines.length; i++) {
-					bot.sendMessage({
-						to: channelID,
-						message: lines[i]
-					})
+					channel.send(lines[i])
 				}
 			}
 			else {
-    			bot.sendMessage({
-					to: channelID,
-					message: jsonObject.choices[0].text.split("\n\n")[0]
-				})
+    			channel.send(lines[0])
 			}
 		})
-    }
-    else if ((message.includes('yikesbot') || message.includes('yb')) && (user != 'yikesbot')) {
-		if (user == 'BroccoliWalkway') {
-			bot.sendMessage({
-				to: channelID,
-				message: cool.faces[randomNumber(0,9)]
-			})
-		}
-		else {
-			bot.sendMessage({
-				to: channelID,
-				message: cool().toString()
-			});
-		}
 	}
-	else if ((message.substring(0,3) == '```') || (message.substring(0,3) == '"""')) {
-		if (!(user == 'yikesbot')) {
+    else if ((message.content.includes('yikesbot') || message.content.includes('yb')) && (message.author.username != 'yikesbot')) {
+				channel.send(cool().toString())
+	}	
+	else if ((message.content.substring(0,3) == '```') || (message.content.substring(0,3) == '"""')) {
+		if (!(message.author.username == 'yikesbot')) {
 			cmd = message;
 		}
 		else {
@@ -127,22 +108,16 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 	    }
 		if (!(cmd == "I'm a pretty butterfly!")) {
 			const { spawn } = require('child_process');
-			const responses = []; // Store readings
 			logger.info(cmd.toString())
-			const yikes = spawn('python3', ['yikes.py', cmd.toString()]);
+			const yikes = spawn('python3', ['yikes.py', cmd.toString(), 400, '\n\n', 'davinci-codex']);
 			yikes.stdout.on('data', function(data) {
 				logger.info(data.toString())
 				jsonObject = JSON.parse(data)
-    			responses.push(data);
-    			bot.sendMessage({
-					to: channelID,
-					message: '\`\`\`'+jsonObject.choices[0].text+'\`\`\`'
-				})
+				channel.send(jsonObject.choices[0].text)
 			})
-			bot.sendMessage({
-				to: channelID,
-				message: '@'+user
-			})
+			message.react('🤔')
 		}		
 	}
 });
+
+bot.login(process.env.BOT_TOKEN);
