@@ -9,10 +9,11 @@ max_tokens = int(sys.argv[2])
 stop = sys.argv[3]
 engine = sys.argv[4]
 codex = 'codex'
+prompt = 'chat log\n'
 if codex in engine:
 	message = sys.argv[1][3:-3]
 else:
-	message = sys.argv[1]
+	message = prompt+sys.argv[1]
 
 response = openai.Completion.create(
 	engine=engine,
