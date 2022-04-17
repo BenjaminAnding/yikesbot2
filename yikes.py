@@ -18,7 +18,7 @@ There are a number of utility commands being showcased here.'''
 
 intents = discord.Intents.default()
 intents.members = True
-intents.message_content = True
+#intents.message_content = True
 
 bot = commands.Bot(command_prefix='?', description=description, intents=intents)
 
@@ -31,10 +31,11 @@ async def on_ready():
 
 @bot.command()
 async def chat(ctx, context: str):
-	input_ids = tokenizer(context, return_tensors="pt").input_ids
+	prompt = ctx.author.name + ':' + context + '\n' + 'you:'
+	input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 	gen_tokens = model.generate(input_ids=input_ids, do_sample=True, temperature=0.9, max_length=250,)
 	gen_text = tokenizer.batch_decode(gen_tokens)[0]
-    await ctx.send(gen_text)
+	await ctx.send(gen_text.replace(prompt, ''))
 
 
 @bot.command()
@@ -83,7 +84,6 @@ async def cool(ctx):
 async def _bot(ctx):
     """Is the bot cool?"""
     await ctx.send('Yes, the bot is cool.')
-
 
 bot.run(os.getenv("DISCORD_BOT_TOKEN"))
 
